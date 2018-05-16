@@ -1,0 +1,9 @@
+[package]
+name = "keccak"
+version = "0.1.0"
+authors = ["Nervos Core Dev <dev@nervos.org>"]
+
+[dependencies]
+
+[build-dependencies]
+cc = "1.0"

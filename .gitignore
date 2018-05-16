@@ -1,0 +1,37 @@
+# Compiled files
+*.o
+*.so
+*.rlib
+*.dll
+
+# Executables
+*.exe
+
+# intermedia file directory
+target/
+*/target/
+admintool/example/
+
+*.pyc
+
+# Cargo lock in subs
+**/Cargo.lock
+
+# editor specific
+# vim stuff
+*.swp
+# emacs stuff
+*~
+# vscode
+.vscode
+# jetbrains ide stuff
+.idea
+*.iml
+# mac stuff
+.DS_Store
+
+# vagrant file
+.vagrant
+
+# nervos runtime folder
+.nervos

@@ -1,0 +1,23 @@
+[package]
+name = "ethash"
+version = "0.1.0"
+authors = ["Nervos Core Dev <dev@nervos.org>"]
+
+[dependencies]
+primal = "0.2.3"
+keccak = { path = "./keccak" }
+lazy_static = "1.0"
+bigint = { git = "https://github.com/NervosFoundation/bigint" }
+byteorder = "1"
+crunchy = "0.2"
+rayon = "1.0"
+memmap = "0.6"
+lru-cache = { git = "https://github.com/NervosFoundation/lru-cache" }
+parking_lot = "0.5"
+log = "0.4"
+
+[dev-dependencies]
+tempdir = "0.3"
+
+[features]
+benches = []

@@ -28,7 +28,7 @@ impl CacheBuilder {
         let cache_size = get_cache_size(epoch);
         let seed = self.seed_hash.get_by_epoch(epoch);
         let file_name = cache_file_name(epoch);
-        let file_path = path.with_file_name(file_name);
+        let file_path = path.join(file_name);
         let exists = file_exists(&file_path);
 
         let memmap = if exists {

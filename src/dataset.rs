@@ -23,7 +23,7 @@ impl DatasetBuilder {
         let _guard = self.lock.lock();
         let full_size = get_dataset_size(epoch);
         let file_name = dataset_file_name(epoch);
-        let file_path = path.with_file_name(file_name);
+        let file_path = path.join(file_name);
         let exists = file_exists(&file_path);
 
         let memmap = if exists {

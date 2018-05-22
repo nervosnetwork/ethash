@@ -1,5 +1,5 @@
 use super::algorithm::{calc_dataset, get_dataset_size, HASH_BYTES, REVISION};
-use super::shared::{file_exists, Epoch, NATIVE_ENDIAN};
+use super::shared::{Epoch, NATIVE_ENDIAN};
 use memmap::MmapMut;
 use parking_lot::Mutex;
 use std::fs;
@@ -24,7 +24,7 @@ impl DatasetBuilder {
         let full_size = get_dataset_size(epoch);
         let file_name = dataset_file_name(epoch);
         let file_path = path.join(file_name);
-        let exists = file_exists(&file_path);
+        let exists = file_path.exists();
 
         let memmap = if exists {
             load_memmap_dataset(&file_path).or_else(|e| {
@@ -33,6 +33,7 @@ impl DatasetBuilder {
             })
         } else {
             debug!(target: "ethash", "build dataset epoch {:?} path {:?}", epoch, &file_path);
+            fs::create_dir_all(path)?;
             new_memmap_dataset(&file_path, full_size, cache)
         }?;
 
@@ -94,7 +95,7 @@ impl Drop for Dataset {
         let _guard = self.lock.lock();
         if let Some(last) = self.epoch
             .checked_sub(2)
-            .map(|epoch| self.path.with_file_name(dataset_file_name(epoch)))
+            .map(|epoch| self.path.join(dataset_file_name(epoch)))
         {
             fs::remove_file(last).unwrap_or_else(|error| match error.kind() {
                 io::ErrorKind::NotFound => (),
@@ -108,7 +109,7 @@ impl Drop for Dataset {
 
 impl Dataset {
     pub fn file_path(&self) -> PathBuf {
-        self.path.with_file_name(dataset_file_name(self.epoch))
+        self.path.join(dataset_file_name(self.epoch))
     }
 }
 

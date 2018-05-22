@@ -145,9 +145,9 @@ fn fetch_cache(
 
 #[cfg(test)]
 mod tests {
-    use super::{get_epoch, Ethash};
+    use super::Ethash;
     use bigint::{H256, U256};
-    use std::fs;
+    use std::path::PathBuf;
     use tempdir::TempDir;
 
     struct TestBlock {
@@ -243,13 +243,22 @@ mod tests {
     #[test]
     fn test_file_remove() {
         let test_path = TempDir::new("test_ethash").unwrap();
-        let ethash = Ethash::new(test_path.path().join("ethash_cache_file"));
+        let files = {
+            let ethash = Ethash::new(test_path.path().join("ethash_cache_file"));
 
-        let mut files = Vec::new();
+            let mut files = Vec::new();
 
-        for ep in 0..6 {
-            files.push(ethash.gen_cache(ep).file_path());
-        }
+            for ep in 0..6 {
+                files.push(ethash.gen_cache(ep).file_path());
+            }
+            files
+        };
+
+        let files = files
+            .into_iter()
+            .filter(|file| file.exists())
+            .collect::<Vec<PathBuf>>();
+        assert_eq!(files.len(), 2);
     }
 
     #[test]

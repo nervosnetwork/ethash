@@ -1,6 +1,4 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy))]
-use std::path::Path;
-
 pub const MAX_EPOCH: u64 = 2048;
 
 pub type Epoch = u64;
@@ -10,11 +8,6 @@ pub const NATIVE_ENDIAN: &str = ".le";
 
 #[cfg(target_endian = "big")]
 pub const NATIVE_ENDIAN: &str = ".be";
-
-pub fn file_exists<P: AsRef<Path>>(path: P) -> bool {
-    let path = path.as_ref();
-    path.exists() && path.is_file()
-}
 
 // DataSetSizes is a lookup table for the ethash dataset size for the first 2048
 // epochs (i.e. 61440000 blocks).

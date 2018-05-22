@@ -1,6 +1,6 @@
 use super::algorithm::{calc_cache, get_cache_size, HASH_BYTES, REVISION};
 use super::seed_hash::SeedHash;
-use super::shared::{file_exists, Epoch, NATIVE_ENDIAN};
+use super::shared::{Epoch, NATIVE_ENDIAN};
 use bigint::H256;
 use memmap::MmapMut;
 use parking_lot::Mutex;
@@ -29,7 +29,7 @@ impl CacheBuilder {
         let seed = self.seed_hash.get_by_epoch(epoch);
         let file_name = cache_file_name(epoch);
         let file_path = path.join(file_name);
-        let exists = file_exists(&file_path);
+        let exists = file_path.exists();
 
         let memmap = if exists {
             load_memmap_cache(&file_path).or_else(|e| {
@@ -38,7 +38,7 @@ impl CacheBuilder {
             })
         } else {
             debug!(target: "ethash", "build cache epoch {:?} path {:?}", epoch, &file_path);
-
+            fs::create_dir_all(path)?;
             new_memmap_cache(&file_path, cache_size, &seed)
         }?;
 
@@ -100,7 +100,7 @@ impl Drop for Cache {
         let _guard = self.lock.lock();
         if let Some(last) = self.epoch
             .checked_sub(2)
-            .map(|epoch| self.path.with_file_name(cache_file_name(epoch)))
+            .map(|epoch| self.path.join(cache_file_name(epoch)))
         {
             fs::remove_file(last).unwrap_or_else(|error| match error.kind() {
                 io::ErrorKind::NotFound => (),
@@ -114,7 +114,7 @@ impl Drop for Cache {
 
 impl Cache {
     pub fn file_path(&self) -> PathBuf {
-        self.path.with_file_name(cache_file_name(self.epoch))
+        self.path.join(cache_file_name(self.epoch))
     }
 }
 

@@ -3,7 +3,8 @@
 
 use bigint::{H256, H512};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use keccak::keccak::{keccak_256, keccak_256_replace, keccak_512_replace, raw_keccak_512};
+use keccak::keccak::{keccak_256, keccak_256_replace, keccak_512_replace, raw_keccak_256,
+                     raw_keccak_512};
 use primal::is_prime;
 use rayon::prelude::*;
 use shared::{Epoch, CACHE_SIZES, DATA_SET_SIZES, MAX_EPOCH};
@@ -69,6 +70,28 @@ unsafe fn initialize_cache(cache: &mut [u8], num: usize, seed: &H256) {
         let src = ptr.offset(((i - 1) * HASH_BYTES) as isize);
 
         raw_keccak_512(dst, HASH_BYTES, src, HASH_BYTES);
+    }
+}
+
+/// recover boundary from mix hash. use to cheap check
+pub fn recover_boundary(pow_hash: &H256, nonce: u64, mix_hash: &H256) -> H256 {
+    unsafe {
+        let mut buf: [u8; 64 + 32] = ::std::mem::uninitialized();
+
+        ::std::ptr::copy_nonoverlapping(pow_hash.as_ptr(), buf.as_mut_ptr(), 32);
+        ::std::ptr::copy_nonoverlapping(
+            &nonce as *const u64 as *const u8,
+            buf[32..].as_mut_ptr(),
+            8,
+        );
+
+        raw_keccak_512(buf.as_mut_ptr(), 64, buf.as_ptr(), 40);
+        ::std::ptr::copy_nonoverlapping(mix_hash.as_ptr(), buf[64..].as_mut_ptr(), 32);
+
+        let mut ret: [u8; 32] = ::std::mem::uninitialized();
+        raw_keccak_256(ret.as_mut_ptr(), ret.len(), buf.as_ptr(), buf.len());
+
+        H256(ret)
     }
 }
 
@@ -291,17 +314,17 @@ fn hashimoto<F: Fn(usize) -> H512>(pow_hash: H256, nonce: u64, full_size: usize,
     }
 
     let mut result = [0u8; 32];
-    // HASH_BYTES + MIX_BYTES / 4
-    let mut buf = [0u8; 96];
     unsafe {
+        // HASH_BYTES + MIX_BYTES / 4
+        let mut buf: [u8; 96] = mem::uninitialized();
         ptr::copy_nonoverlapping(s.as_ptr(), buf.as_mut_ptr(), s.len());
         ptr::copy_nonoverlapping(
             compress_mix.as_ptr(),
             buf[s.len()..].as_mut_ptr(),
             compress_mix.len(),
         );
+        keccak_256(&buf, &mut result);
     }
-    keccak_256(&buf, &mut result);
     Pow {
         mix: H256::from(compress_mix),
         value: H256::from(result),
@@ -330,7 +353,7 @@ mod tests {
     use super::*;
     use memmap::MmapMut;
     use std::fs;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
     use tempdir::TempDir;
 
     fn new_memmap<P: AsRef<Path>>(path: P, size: usize) -> MmapMut {
@@ -342,6 +365,33 @@ mod tests {
             .expect("tests::ethash open file");
         file.set_len(size as u64).expect("tests::ethash set_len");
         unsafe { MmapMut::map_mut(&file).expect("tests::ethash MmapMut map_mut") }
+    }
+
+    #[test]
+    fn test_recover_boundary() {
+        let hash = H256([
+            0xf5, 0x7e, 0x6f, 0x3a, 0xcf, 0xc0, 0xdd, 0x4b, 0x5b, 0xf2, 0xbe, 0xe4, 0x0a, 0xb3,
+            0x35, 0x8a, 0xa6, 0x87, 0x73, 0xa8, 0xd0, 0x9f, 0x5e, 0x59, 0x5e, 0xab, 0x55, 0x94,
+            0x05, 0x52, 0x7d, 0x72,
+        ]);
+        let mix_hash = H256([
+            0x1f, 0xff, 0x04, 0xce, 0xc9, 0x41, 0x73, 0xfd, 0x59, 0x1e, 0x3d, 0x89, 0x60, 0xce,
+            0x6b, 0xdf, 0x8b, 0x19, 0x71, 0x04, 0x8c, 0x71, 0xff, 0x93, 0x7b, 0xb2, 0xd3, 0x2a,
+            0x64, 0x31, 0xab, 0x6d,
+        ]);
+        let nonce = 0xd7b3ac70a301a249;
+        let boundary_good = H256([
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3e, 0x9b, 0x6c, 0x69, 0xbc, 0x2c, 0xe2, 0xa2,
+            0x4a, 0x8e, 0x95, 0x69, 0xef, 0xc7, 0xd7, 0x1b, 0x33, 0x35, 0xdf, 0x36, 0x8c, 0x9a,
+            0xe9, 0x7e, 0x53, 0x84,
+        ]);
+        assert_eq!(recover_boundary(&hash, nonce, &mix_hash), boundary_good);
+        let boundary_bad = H256([
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3a, 0x9b, 0x6c, 0x69, 0xbc, 0x2c, 0xe2, 0xa2,
+            0x4a, 0x8e, 0x95, 0x69, 0xef, 0xc7, 0xd7, 0x1b, 0x33, 0x35, 0xdf, 0x36, 0x8c, 0x9a,
+            0xe9, 0x7e, 0x53, 0x84,
+        ]);
+        assert!(recover_boundary(&hash, nonce, &mix_hash) != boundary_bad);
     }
 
     #[test]
@@ -409,7 +459,6 @@ mod tests {
         let height = 486382;
         let epoch = get_epoch(height);
         let cache_size = get_cache_size(epoch);
-        let full_size = get_dataset_size(epoch);
         let seed = seed_hash(epoch);
         let cache = generate_cache(cache_size as usize, &seed);
         let pow_hash = H256([

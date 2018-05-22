@@ -19,7 +19,7 @@ extern crate rayon;
 #[cfg(test)]
 extern crate tempdir;
 
-mod algorithm;
+pub mod algorithm;
 mod cache;
 mod dataset;
 mod ethash;
@@ -27,7 +27,7 @@ mod seed_hash;
 #[rustfmt_skip]
 mod shared;
 
-pub use algorithm::{get_epoch, Pow};
+pub use algorithm::{get_epoch, recover_boundary, Pow};
 pub use ethash::Ethash;
 
 #[cfg(feature = "benches")]

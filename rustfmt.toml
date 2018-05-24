@@ -2,7 +2,6 @@ max_width = 100
 tab_spaces = 4
 reorder_imports = true
 reorder_modules = true
-reorder_impl_items = true
 use_try_shorthand = true
 
 ignore = [

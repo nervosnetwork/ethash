@@ -1,3 +1,6 @@
+//https://github.com/rust-lang-nursery/rust-clippy/issues/2795
+#![cfg_attr(feature = "cargo-clippy", allow(op_ref))]
+
 use super::algorithm::{get_epoch, seed_hash};
 use super::shared::Epoch;
 use bigint::H256;
@@ -50,8 +53,8 @@ impl SeedHash {
 
 #[cfg(test)]
 mod tests {
-    use super::SeedHash;
     use super::super::algorithm::{seed_hash, EPOCH_LENGTH};
+    use super::SeedHash;
 
     #[test]
     fn test_seed_hash_cache() {

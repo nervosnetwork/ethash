@@ -98,7 +98,8 @@ pub struct Cache {
 impl Drop for Cache {
     fn drop(&mut self) {
         let _guard = self.lock.lock();
-        if let Some(last) = self.epoch
+        if let Some(last) = self
+            .epoch
             .checked_sub(2)
             .map(|epoch| self.path.join(cache_file_name(epoch)))
         {
@@ -134,8 +135,8 @@ impl AsMut<[u8]> for Cache {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::algorithm::{get_epoch, hashimoto_light};
+    use super::*;
     use tempdir::TempDir;
 
     #[test]

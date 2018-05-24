@@ -93,7 +93,8 @@ pub struct Dataset {
 impl Drop for Dataset {
     fn drop(&mut self) {
         let _guard = self.lock.lock();
-        if let Some(last) = self.epoch
+        if let Some(last) = self
+            .epoch
             .checked_sub(2)
             .map(|epoch| self.path.join(dataset_file_name(epoch)))
         {
@@ -129,10 +130,10 @@ impl AsMut<[u8]> for Dataset {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::algorithm::{get_epoch, hashimoto_full};
     use super::super::cache::CacheBuilder;
     use super::super::seed_hash::SeedHash;
+    use super::*;
     use bigint::H256;
     use std::sync::Arc;
     use tempdir::TempDir;

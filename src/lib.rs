@@ -1,6 +1,5 @@
 #![cfg_attr(feature = "benches", feature(test))]
-#![feature(ptr_internals, custom_attribute)]
-#![allow(unused_attributes)]
+#![feature(ptr_internals)]
 
 extern crate bigint;
 extern crate byteorder;
@@ -24,7 +23,6 @@ mod cache;
 mod dataset;
 mod ethash;
 mod seed_hash;
-#[rustfmt_skip]
 mod shared;
 
 pub use algorithm::{get_epoch, recover_boundary, Pow};

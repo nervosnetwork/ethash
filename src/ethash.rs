@@ -67,7 +67,8 @@ impl Ethash {
 
             let mut mut_datasets = datasets.upgrade();
             let cache = self.gen_cache(epoch);
-            let dataset = self.dataset_builder
+            let dataset = self
+                .dataset_builder
                 .build(epoch, &self.cache_path, (cache.as_ref()).as_ref())
                 .expect("generate dataset");
 

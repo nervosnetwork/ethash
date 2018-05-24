@@ -3,8 +3,9 @@
 
 use bigint::{H256, H512};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use keccak::keccak::{keccak_256, keccak_256_replace, keccak_512_replace, raw_keccak_256,
-                     raw_keccak_512};
+use keccak::keccak::{
+    keccak_256, keccak_256_replace, keccak_512_replace, raw_keccak_256, raw_keccak_512,
+};
 use primal::is_prime;
 use rayon::prelude::*;
 use shared::{Epoch, CACHE_SIZES, DATA_SET_SIZES, MAX_EPOCH};

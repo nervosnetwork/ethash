@@ -5,7 +5,7 @@ use super::seed_hash::SeedHash;
 use super::shared::Epoch;
 use bigint::H256;
 use lru_cache::LruCache;
-use parking_lot::RwLock;
+use parking_lot::{RwLock, RwLockUpgradableReadGuard};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
@@ -65,7 +65,7 @@ impl Ethash {
         if !datasets.contains_key(&epoch) {
             info!(target: "ethash", "build dataset epoch {:?} path {:?} start", epoch, &self.cache_path);
 
-            let mut mut_datasets = datasets.upgrade();
+            let mut mut_datasets = RwLockUpgradableReadGuard::upgrade(datasets);
             let cache = self.gen_cache(epoch);
             let dataset = self
                 .dataset_builder
@@ -131,7 +131,7 @@ fn fetch_cache(
 ) -> Arc<Cache> {
     let caches = caches.upgradable_read();
     if !caches.contains_key(&epoch) {
-        let mut mut_caches = caches.upgrade();
+        let mut mut_caches = RwLockUpgradableReadGuard::upgrade(caches);
         let cache = cache_builder
             .build(epoch, cache_path)
             .expect("generate cache");

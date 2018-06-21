@@ -6,7 +6,7 @@ use super::shared::Epoch;
 use bigint::H256;
 use keccak::keccak::keccak_256_replace;
 use lru_cache::LruCache;
-use parking_lot::RwLock;
+use parking_lot::{RwLock, RwLockUpgradableReadGuard};
 
 #[derive(Default)]
 pub struct SeedHash {
@@ -30,7 +30,7 @@ impl SeedHash {
         if let Some(hash) = { cache.get(&epoch).cloned() } {
             return hash;
         } else {
-            let mut mut_cache = cache.upgrade();
+            let mut mut_cache = RwLockUpgradableReadGuard::upgrade(cache);
             let seed =
                 if let Some((pre_epoch, pre_hash)) = mut_cache.iter().find(|&(k, _v)| k < &epoch) {
                     Self::compute_seedhash(*pre_hash, *pre_epoch, epoch)

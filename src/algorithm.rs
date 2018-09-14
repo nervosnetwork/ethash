@@ -9,7 +9,11 @@ use keccak::keccak::{
 use primal::is_prime;
 use rayon::prelude::*;
 use shared::{Epoch, CACHE_SIZES, DATA_SET_SIZES, MAX_EPOCH};
-use std::ptr::Unique;
+
+struct SharedPtr(*mut u8);
+
+unsafe impl Send for SharedPtr {}
+unsafe impl Sync for SharedPtr {}
 
 pub const REVISION: u32 = 23;
 pub const WORD_BYTES: usize = 4;
@@ -197,7 +201,9 @@ fn calc_dataset_item(cache: &[u8], index: usize) -> H512 {
             (&mix[(j % r * WORD_BYTES)..])
                 .read_u32::<LittleEndian>()
                 .expect("write_u32"),
-        ) as usize % n * HASH_BYTES;
+        ) as usize
+            % n
+            * HASH_BYTES;
         let mut item = [0u8; 64];
         item[..].copy_from_slice(&cache[cache_index..cache_index + HASH_BYTES]);
         fnv64(&mut mix, item);
@@ -206,16 +212,15 @@ fn calc_dataset_item(cache: &[u8], index: usize) -> H512 {
     H512(mix)
 }
 
-// use `Unique` wrap make ptr `Sync`
+// use `SharedPtr` wrap make ptr `Sync`
 pub fn calc_dataset(dataset: &mut [u8], num: usize, cache: &[u8]) {
     let ptr: *mut u8 = dataset.as_mut_ptr();
 
-    let shared_ptr = Unique::new(ptr).expect("Unique ptr");
+    let shared_ptr = SharedPtr(ptr);
     (0..num).into_par_iter().for_each(|i| {
         let item = calc_dataset_item(cache, i);
         unsafe {
-            let ptr = shared_ptr.as_ptr();
-            let dst = ptr.offset((i * HASH_BYTES) as isize);
+            let dst = shared_ptr.0.offset((i * HASH_BYTES) as isize);
             ::std::ptr::copy_nonoverlapping(item.as_ptr(), dst, item.len());
         }
     });
@@ -277,7 +282,9 @@ fn hashimoto<F: Fn(usize) -> H512>(pow_hash: H256, nonce: u64, full_size: usize,
             (&mix[(i % words * 4)..])
                 .read_u32::<LittleEndian>()
                 .unwrap(),
-        ) as usize) % (nodes / MIX_HASHES) * MIX_HASHES;
+        ) as usize)
+            % (nodes / MIX_HASHES)
+            * MIX_HASHES;
 
         let mut newdata = [0u8; MIX_BYTES];
 

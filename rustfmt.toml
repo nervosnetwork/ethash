@@ -3,7 +3,3 @@ tab_spaces = 4
 reorder_imports = true
 reorder_modules = true
 use_try_shorthand = true
-
-ignore = [
-    "src/shared.rs",
-]
